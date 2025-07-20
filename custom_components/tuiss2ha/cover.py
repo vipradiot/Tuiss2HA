@@ -93,7 +93,6 @@ class Tuiss(CoverEntity, RestoreEntity):
         self._endTime: datetime.datetime | None = None
         self._attr_traversal_time: float | None = None
         self._attr_mac_address = self._blind.host
-        self._locked = False
         self._blind_orientation = config.options.get(OPT_BLIND_ORIENTATION, False)
         self._blind._restart_attempts = config.options.get(OPT_RESTART_ATTEMPTS)
         self._blind._position_on_restart = config.options.get(OPT_RESTART_POSITION)
@@ -221,8 +220,7 @@ class Tuiss(CoverEntity, RestoreEntity):
 
     async def async_move_cover(self, movVal, targetPos):
         await self._blind.attempt_connection()
-        if self._blind._client.is_connected and self._locked == False:
-            self._locked = True
+        if self._blind._client.is_connected:
             startPos = self._blind._current_cover_position
             self._blind._moving = movVal
 
@@ -260,9 +258,6 @@ class Tuiss(CoverEntity, RestoreEntity):
                 self._blind._moving = 0
                 await self.async_scheduled_update_request()
 
-            # unlock the entity to allow more changes
-            self._locked = False
-
     async def update_traversal_time(self, targetPos, startPos):
         timeTaken = (self._endTime - self._startTime).total_seconds()
         traversalDistance = abs(targetPos - startPos)
@@ -287,4 +282,3 @@ class Tuiss(CoverEntity, RestoreEntity):
                 await asyncio.sleep(1)
             self._blind._moving = 0
             await self.async_scheduled_update_request()
-        self._locked = False
